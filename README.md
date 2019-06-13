@@ -1,4 +1,4 @@
-molecular_properties
+Predicting Molecular Properties
 ==============================
 
 This challenge aims to predict interactions between atoms. Imaging technologies like MRI enable us to see and understand the molecular composition of tissues. Nuclear Magnetic Resonance (NMR) is a closely related technology which uses the same principles to understand the structure and dynamics of proteins and molecules.
