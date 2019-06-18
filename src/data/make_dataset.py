@@ -1,30 +1,84 @@
-# -*- coding: utf-8 -*-
-import click
+"""
+Process the raw data in such a way that it becomes input for a model.
+"""
 import logging
-from pathlib import Path
-from dotenv import find_dotenv, load_dotenv
+import pandas as pd
+
+LOGGER = logging.getLogger(__name__)
 
 
-@click.command()
-@click.argument('input_filepath', type=click.Path(exists=True))
-@click.argument('output_filepath', type=click.Path())
-def main(input_filepath, output_filepath):
-    """ Runs data processing scripts to turn raw data from (../raw) into
-        cleaned data ready to be analyzed (saved in ../processed).
+class MakeDataset():
     """
-    logger = logging.getLogger(__name__)
-    logger.info('making final data set from raw data')
+    Create the input dataset for the model.
+    """
 
+    def __init__(self, input_filepath, output_filepath):
+        """
+        Define the input and output filepath.
+        :param input_filepath: Filepath where raw data is stored.
+        :param output_filepath: Filepath where the processed data will be stored.
+        """
+        self.input_filepath = input_filepath
+        self.output_filepath = output_filepath
+        self.df_input = pd.read_csv(input_filepath)
 
-if __name__ == '__main__':
-    log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    logging.basicConfig(level=logging.INFO, format=log_fmt)
+    def replace_nan(self, column_list, replacement):
+        """
+        Replaces the NaN values in a Pandas dataframe
+        :param df_input: Input Pandas dataframe with NaN's
+        :param column_list: List with selection of features
+        :param replacement: Value that is used to replace NaN's
+        :return: Selection of dataframe with replaced NaN's
+        """
+        return self.df_input.loc[:, column_list].fillna(replacement)
 
-    # not used in this stub but often useful for finding various files
-    project_dir = Path(__file__).resolve().parents[2]
+    def execute(self):
+        """
 
-    # find .env automagically by walking up directories until it's found, then
-    # load up the .env entries as environment variables
-    load_dotenv(find_dotenv())
+        :return:
+        """
 
-    main()
+        LOGGER.info('making final data set from raw data')
+
+        # Load the raw data in a pandas dataframe
+        df_raw = pd.read_excel(self.input_filepath)
+
+        list_continuous = ['LotFrontage', 'LotArea', 'MasVnrArea',
+                           'BsmtFinSF1', 'BsmtFinSF2', 'BsmtUnfSF',
+                           'TotalBsmtSF', '1stFlrSF', '2ndFlrSF',
+                           'LowQualFinSF', 'GrLivArea', 'GarageArea',
+                           'WoodDeckSF', 'OpenPorchSF', 'EnclosedPorch',
+                           '3SsnPorch', 'ScreenPorch', 'PoolArea',
+                           'MiscVal']
+
+        list_categorical = ['MSSubClass', 'MSZoning', 'Street',
+                            'Alley', 'LotShape', 'LandContour',
+                            'Utilities', 'LotConfig', 'LandSlope',
+                            'Neighborhood', 'Condition1', 'Condition2',
+                            'BldgType', 'HouseStyle', 'RoofStyle',
+                            'RoofMatl', 'Exterior1st', 'Exterior2nd',
+                            'MasVnrType', 'BedroomAbvGr', 'KitchenAbvGr',
+                            'Foundation', 'Id',
+                            'BsmtFinType1', 'BsmtFinType2',
+                            'Heating', 'CentralAir', 'Electrical',
+                            'BsmtFullBath', 'BsmtHalfBath', 'FullBath',
+                            'HalfBath',
+                            'TotRmsAbvGrd', 'Functional', 'Fireplaces',
+                            'GarageType', 'GarageFinish', 'GarageCars',
+                            'PavedDrive', 'Fence', 'MiscFeature',
+                            'MoSold', 'YrSold', 'SaleType',
+                            'SaleCondition']
+
+        list_ordinal = ['OverallQual', 'OverallCond', 'ExterQual',
+                        'ExterCond', 'BsmtQual', 'BsmtCond',
+                        'BsmtExposure', 'HeatingQC', 'KitchenQual',
+                        'FireplaceQu', 'GarageQual', 'GarageCond',
+                        'PoolQC']
+
+        list_date = ['YearBuilt', 'YearRemodAdd', 'GarageYrBlt']
+
+        list_features = list_continuous + list_categorical + list_ordinal + list_date
+
+        df_target = df_raw.loc[:, ~df_raw.columns.isin(list_features)]
+
+        return df_target
