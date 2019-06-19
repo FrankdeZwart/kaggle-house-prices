@@ -4,7 +4,7 @@ Process the raw data in such a way that it becomes input for a model.
 import logging
 import pandas as pd
 
-LOGGER = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 
 class MakeDataset():
@@ -12,15 +12,15 @@ class MakeDataset():
     Create the input dataset for the model.
     """
 
-    def __init__(self, input_filepath, output_filepath):
+    def __init__(self):
         """
         Define the input and output filepath.
         :param input_filepath: Filepath where raw data is stored.
         :param output_filepath: Filepath where the processed data will be stored.
         """
-        self.input_filepath = input_filepath
-        self.output_filepath = output_filepath
-        self.df_input = pd.read_csv(input_filepath)
+        self.input_filepath = './data/raw/train.csv'
+        self.output_filepath = './data/processed/train.csv'
+        self.df_input = pd.read_csv(self.input_filepath)
 
     def replace_nan(self, column_list, replacement):
         """
@@ -38,11 +38,9 @@ class MakeDataset():
         :return:
         """
 
-        LOGGER.info('making final data set from raw data')
+        logger.info('making final data set from raw data')
 
-        # Load the raw data in a pandas dataframe
-        df_raw = pd.read_excel(self.input_filepath)
-
+        # Group the features based on their type
         list_continuous = ['LotFrontage', 'LotArea', 'MasVnrArea',
                            'BsmtFinSF1', 'BsmtFinSF2', 'BsmtUnfSF',
                            'TotalBsmtSF', '1stFlrSF', '2ndFlrSF',
@@ -77,8 +75,22 @@ class MakeDataset():
 
         list_date = ['YearBuilt', 'YearRemodAdd', 'GarageYrBlt']
 
+        # Replace the NaN values for each feature type
+        df_continuous = self.replace_nan(list_continuous, 0)
+        df_categorical = self.replace_nan(list_categorical, 'None')
+        # df_ordinal = self.replace_nan(list_ordinal, '')
+        # df_date = self.replace_nan(list_date, )
+
+        # Create one list with all features
         list_features = list_continuous + list_categorical + list_ordinal + list_date
 
-        df_target = df_raw.loc[:, ~df_raw.columns.isin(list_features)]
+        # Store the target value in a separate
+        df_target = self.df_input.loc[:, ~self.df_input.columns.isin(list_features)]
 
-        return df_target
+        import pdb
+        pdb.set_trace()
+
+        return df_target, df_continuous, df_categorical
+
+
+MakeDataset().execute()
