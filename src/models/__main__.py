@@ -13,7 +13,8 @@ def main():
     This function handles command line input and calls on the modules based on the input given.
     :return:
     """
-    MakeDataset().execute()
+    MakeDataset(filename='train.csv').execute()
+    MakeDataset(filename='test.csv').execute()
 
     logger.info('Script succeeded.')
 

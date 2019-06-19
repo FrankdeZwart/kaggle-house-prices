@@ -4,6 +4,7 @@ Process the raw data in such a way that it becomes input for a model.
 import logging
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
+import datetime
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
@@ -13,50 +14,43 @@ class MakeDataset():
     Create the input dataset for the model.
     """
 
-    def __init__(self):
+    def __init__(self, filename: str):
         """
         Define the input and output filepath.
-        :param input_filepath: Filepath where raw data is stored.
-        :param output_filepath: Filepath where the processed data will be stored.
+        :param filename: Name of the file that is processed.
         """
-        self.input_filepath = './data/raw/train.csv'
-        self.output_filepath = './data/processed/train.csv'
-        self.df_raw = pd.read_csv(self.input_filepath)
+        self.filename = filename
+        self.input_filepath = './data/raw/' + self.filename
+        self.output_filepath = './data/processed/' + self.filename
+        self.df = pd.read_csv(self.input_filepath)
 
     def replace_nan(self, column_list, replacement):
         """
         Replaces the NaN values in a Pandas dataframe.
         :param column_list: List with selection of features.
         :param replacement: Value that is used to replace NaN's.
-        :return: Selection of dataframe with replaced NaN's.
         """
-        return self.df_raw.loc[:, column_list].fillna(replacement)
+        self.df.loc[:, column_list] = self.df.loc[:, column_list].fillna(replacement)
 
-    @staticmethod
-    def map_dictionary(df_input, dictionary):
+    def map_dictionary(self, dictionary, column_list):
         """
         Changes values in a dataframe by mapping a dictionary.
-        :param df_input: Input Pandas dataframe.
-        :param dict: Dictionary with key value pairs.
-        :return: Pandas dataframe with transformed values.
+        :param dictionary: Dictionary with key value pairs.
+        :param column_list: List of columns to apply mapping to.
         """
-        df_output = pd.DataFrame(columns=df_input.columns)
-        for column in df_input.columns:
-            df_output[column] = df_input[column].map(dictionary).fillna(df_input[column])
-        return df_output
+        for column in column_list:
+            self.df.loc[:, column] = self.df.loc[:, column].map(dictionary) \
+                .fillna(self.df.loc[:, column])
 
-    @staticmethod
-    def standard_scaler(df_input):
+    def standard_scaler(self, column_list):
         """
-        Standardizes values in Pandas a dataframe.
-        :param df_input: Input Pandas dataframe.
-        :return: Pandas dataframe with standardized values per column.
+        Standardizes the values for a selection columns from a dataframe.
+        :param column_list: List of columns to apply mapping to.
         """
-        input_scaled = StandardScaler().fit_transform(df_input)
-        df_output = pd.DataFrame(data=input_scaled,
-                                 index=df_input.index,
-                                 columns=df_input.columns)
-        return df_output
+        input_scaled = StandardScaler().fit_transform(self.df.loc[:, column_list])
+        self.df.loc[:, column_list] = pd.DataFrame(data=input_scaled,
+                                                   index=self.df.index,
+                                                   columns=column_list)
 
     def execute(self):
         """
@@ -64,61 +58,70 @@ class MakeDataset():
         :return:
         """
 
-        logger.info('making final data set from raw data')
+        logger.info('Processing data from %s.', self.filename)
 
         # Group the features based on their type
-        list_continuous = ['LotFrontage', 'LotArea', 'MasVnrArea',
-                           'BsmtFinSF1', 'BsmtFinSF2', 'BsmtUnfSF',
-                           'TotalBsmtSF', '1stFlrSF', '2ndFlrSF',
-                           'LowQualFinSF', 'GrLivArea', 'GarageArea',
-                           'WoodDeckSF', 'OpenPorchSF', 'EnclosedPorch',
-                           '3SsnPorch', 'ScreenPorch', 'PoolArea',
-                           'MiscVal']
-        list_categorical = ['MSSubClass', 'MSZoning', 'Street',
-                            'Alley', 'LotShape', 'LandContour',
-                            'Utilities', 'LotConfig', 'LandSlope',
-                            'Neighborhood', 'Condition1', 'Condition2',
-                            'BldgType', 'HouseStyle', 'RoofStyle',
-                            'RoofMatl', 'Exterior1st', 'Exterior2nd',
-                            'MasVnrType', 'BedroomAbvGr', 'KitchenAbvGr',
-                            'Foundation', 'BsmtExposure', 'HalfBath',
-                            'BsmtFinType1', 'BsmtFinType2', 'SaleCondition'
-                                                            'Heating', 'CentralAir', 'Electrical',
-                            'BsmtFullBath', 'BsmtHalfBath', 'FullBath',
-                            'TotRmsAbvGrd', 'Functional', 'Fireplaces',
-                            'GarageType', 'GarageFinish', 'GarageCars',
-                            'PavedDrive', 'Fence', 'MiscFeature',
-                            'MoSold', 'YrSold', 'SaleType']
-        list_ordinal = ['OverallQual', 'OverallCond', 'ExterQual',
-                        'ExterCond', 'BsmtQual', 'BsmtCond',
-                        'HeatingQC', 'KitchenQual', 'PoolQC',
-                        'FireplaceQu', 'GarageQual', 'GarageCond']
-        # list_date = ['YearBuilt', 'YearRemodAdd', 'GarageYrBlt']
+        list_continuous = [
+            'LotFrontage', 'LotArea', 'MasVnrArea',
+            'BsmtFinSF1', 'BsmtFinSF2', 'BsmtUnfSF',
+            'TotalBsmtSF', '1stFlrSF', '2ndFlrSF',
+            'LowQualFinSF', 'GrLivArea', 'GarageArea',
+            'WoodDeckSF', 'OpenPorchSF', 'EnclosedPorch',
+            '3SsnPorch', 'ScreenPorch', 'PoolArea',
+            'MiscVal'
+        ]
+        list_categorical = [
+            'MSSubClass', 'MSZoning', 'Street',
+            'Alley', 'LotShape', 'LandContour',
+            'Utilities', 'LotConfig', 'LandSlope',
+            'Neighborhood', 'Condition1', 'Condition2',
+            'BldgType', 'HouseStyle', 'RoofStyle',
+            'RoofMatl', 'Exterior1st', 'Exterior2nd',
+            'MasVnrType', 'BedroomAbvGr', 'KitchenAbvGr',
+            'Foundation', 'BsmtExposure', 'HalfBath',
+            'BsmtFinType1', 'BsmtFinType2', 'SaleCondition',
+            'Heating', 'CentralAir', 'Electrical',
+            'BsmtFullBath', 'BsmtHalfBath', 'FullBath',
+            'TotRmsAbvGrd', 'Functional', 'Fireplaces',
+            'GarageType', 'GarageFinish', 'GarageCars',
+            'PavedDrive', 'Fence', 'MiscFeature',
+            'MoSold', 'YrSold', 'SaleType'
+        ]
+        list_ordinal = [
+            'OverallQual', 'OverallCond', 'ExterQual',
+            'ExterCond', 'BsmtQual', 'BsmtCond',
+            'HeatingQC', 'KitchenQual', 'PoolQC',
+            'FireplaceQu', 'GarageQual', 'GarageCond'
+        ]
+        list_date = [
+            'YearBuilt', 'YearRemodAdd', 'GarageYrBlt'
+        ]
         target = 'SalePrice'
 
-        # Replace the NaN values for each feature type
-        df_cont_numeric = self.replace_nan(list_continuous, 0)
-        df_cat_raw = self.replace_nan(list_categorical, 'None')
-        df_ord_raw = self.replace_nan(list_ordinal, 0)
+        # Create a dictionary with
+        # key: value to replace NaNs with
+        # value: list of column names
+        current_year = datetime.date.today().year  # NaNs will become 0 when converting years to age
+        dict_nan = {0: list_continuous + list_ordinal,
+                    'None': list_categorical,
+                    current_year: list_date}
 
-        # Convert ordinal object values to numeric values
+        # Replace all NaN values for each feature type
+        for key, value in dict_nan.items():
+            self.replace_nan(value, key)
+
+        # Convert ordinal strings to numeric values
         # Poor | Fair | Average | Good | Excellent
-        dictionary = {'Po': 1, 'Fa': 2, 'TA': 3, 'Gd': 4, 'Ex': 5}
-        df_ord_numeric = self.map_dictionary(df_ord_raw, dictionary)
+        dict_ord = {'Po': 1, 'Fa': 2, 'TA': 3, 'Gd': 4, 'Ex': 5}
+        self.map_dictionary(dict_ord, list_ordinal)
 
         # Use standard scaler to standardize the continuous and ordinal features
-        df_cont_scaled = self.standard_scaler(df_cont_numeric)
-        df_ord_scaled = self.standard_scaler(df_ord_numeric)
+        self.standard_scaler(list_continuous + list_ordinal)
 
         # Convert the categorical features to dummies
-        df_cat_dummy = pd.get_dummies(df_cat_raw, columns=df_cat_raw.columns, drop_first=True)
-
-        # Concatenate all columns in one processed df_train
-        df_train_processed = pd.concat([df_cont_scaled, df_ord_scaled,
-                                        df_cat_dummy, self.df_raw.loc[:, target]],
-                                       axis=1)
+        self.df = pd.get_dummies(self.df, columns=list_categorical, drop_first=True)
 
         # Store the processed file
-        df_train_processed.to_csv('./data/processed/train.csv')
+        self.df.to_csv(self.output_filepath)
 
-MakeDataset().execute()
+        logger.info('Written processed file to %s.', self.output_filepath)

@@ -4,6 +4,7 @@ attrs==19.1.0
 backcall==0.1.0
 bleach==3.1.0
 cycler==0.10.0
+DateTime==4.3
 decorator==4.4.0
 defusedxml==0.6.0
 entrypoints==0.3
@@ -61,3 +62,4 @@ wcwidth==0.1.7
 webencodings==0.5.1
 widgetsnbextension==3.4.2
 wrapt==1.11.2
+zope.interface==4.6.0
