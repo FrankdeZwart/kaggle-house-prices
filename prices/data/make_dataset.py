@@ -2,9 +2,9 @@
 Process the raw data in such a way that it becomes input for a model.
 """
 import logging
+import datetime
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
-import datetime
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
@@ -14,15 +14,16 @@ class MakeDataset():
     Create the input dataset for the model.
     """
 
-    def __init__(self, filename: str):
+    def __init__(self, filepath: str, filename: str):
         """
         Define the input and output filepath.
         :param filename: Name of the file that is processed.
         """
+        self.filepath = filepath
         self.filename = filename
-        self.input_filepath = './data/raw/' + self.filename
-        self.output_filepath = './data/processed/' + self.filename
-        self.df = pd.read_csv(self.input_filepath)
+        self.input_filepath = self.filepath + '/data/raw/' + self.filename
+        self.output_filepath = self.filepath + '/data/processed/' + self.filename
+        self.df_houses = pd.read_csv(self.input_filepath)
 
     def replace_nan(self, column_list, replacement):
         """
@@ -30,7 +31,7 @@ class MakeDataset():
         :param column_list: List with selection of features.
         :param replacement: Value that is used to replace NaN's.
         """
-        self.df.loc[:, column_list] = self.df.loc[:, column_list].fillna(replacement)
+        self.df_houses.loc[:, column_list] = self.df_houses.loc[:, column_list].fillna(replacement)
 
     def map_dictionary(self, dictionary, column_list):
         """
@@ -39,18 +40,18 @@ class MakeDataset():
         :param column_list: List of columns to apply mapping to.
         """
         for column in column_list:
-            self.df.loc[:, column] = self.df.loc[:, column].map(dictionary) \
-                .fillna(self.df.loc[:, column])
+            self.df_houses.loc[:, column] = self.df_houses.loc[:, column].map(dictionary) \
+                .fillna(self.df_houses.loc[:, column])
 
     def standard_scaler(self, column_list):
         """
         Standardizes the values for a selection columns from a dataframe.
         :param column_list: List of columns to apply mapping to.
         """
-        input_scaled = StandardScaler().fit_transform(self.df.loc[:, column_list])
-        self.df.loc[:, column_list] = pd.DataFrame(data=input_scaled,
-                                                   index=self.df.index,
-                                                   columns=column_list)
+        input_scaled = StandardScaler().fit_transform(self.df_houses.loc[:, column_list])
+        self.df_houses.loc[:, column_list] = pd.DataFrame(data=input_scaled,
+                                                          index=self.df_houses.index,
+                                                          columns=column_list)
 
     def execute(self):
         """
@@ -58,7 +59,7 @@ class MakeDataset():
         :return:
         """
 
-        logger.info('Processing data from %s.', self.filename)
+        logger.info('Processing data from %s.', self.input_filepath)
 
         # Group the features based on their type
         list_continuous = [
@@ -96,7 +97,6 @@ class MakeDataset():
         list_date = [
             'YearBuilt', 'YearRemodAdd', 'GarageYrBlt'
         ]
-        target = 'SalePrice'
 
         # Create a dictionary with
         # key: value to replace NaNs with
@@ -119,9 +119,9 @@ class MakeDataset():
         self.standard_scaler(list_continuous + list_ordinal)
 
         # Convert the categorical features to dummies
-        self.df = pd.get_dummies(self.df, columns=list_categorical, drop_first=True)
+        self.df_houses = pd.get_dummies(self.df_houses, columns=list_categorical, drop_first=True)
 
         # Store the processed file
-        self.df.to_csv(self.output_filepath)
+        self.df_houses.to_csv(self.output_filepath)
 
         logger.info('Written processed file to %s.', self.output_filepath)
