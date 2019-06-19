@@ -14,15 +14,14 @@ class MakeDataset():
     Create the input dataset for the model.
     """
 
-    def __init__(self, filepath: str, filename: str):
+    def __init__(self, filename: str):
         """
         Define the input and output filepath.
         :param filename: Name of the file that is processed.
         """
-        self.filepath = filepath
         self.filename = filename
-        self.input_filepath = self.filepath + '/data/raw/' + self.filename
-        self.output_filepath = self.filepath + '/data/processed/' + self.filename
+        self.input_filepath = './data/raw/' + self.filename
+        self.output_filepath = './data/processed/' + self.filename
         self.df_houses = pd.read_csv(self.input_filepath)
 
     def replace_nan(self, column_list, replacement):

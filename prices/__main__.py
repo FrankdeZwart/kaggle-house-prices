@@ -8,10 +8,9 @@ import sys
 
 from prices.data.make_dataset import MakeDataset
 
-filepath = os.path.dirname(sys.prefix)
-log_file_path = os.path.join(filepath, './logger.ini')
+log_file_path = os.path.join(sys.prefix, 'prices_data', 'logger.ini')
 logging.config.fileConfig(log_file_path, disable_existing_loggers=False)
-logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
+logger = logging.getLogger(__name__)
 
 
 def main():
@@ -31,6 +30,6 @@ def main():
     args, _ = parser.parse_known_args()
 
     # Process the raw data for model input
-    MakeDataset(filepath=filepath, filename=args.datafile).execute()
+    MakeDataset(filename=args.datafile).execute()
 
     logger.info('Script succeeded.')
