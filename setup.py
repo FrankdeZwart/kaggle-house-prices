@@ -6,6 +6,7 @@ setup(
     include_package_data=True,
     install_requires=[
         'pandas==0.24.2',
+        'scikit_learn==0.21.2'
     ],
     version='0.1.0',
     description='This challenge aims to predict interactions between atoms. Imaging technologies '

@@ -2,9 +2,12 @@
 Process the raw data in such a way that it becomes input for a model.
 """
 import logging
-import datetime
+from datetime import date
+
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
+
+from prices.config import config
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
@@ -23,6 +26,10 @@ class MakeDataset():
         self.input_filepath = './data/raw/' + self.filename
         self.output_filepath = './data/processed/' + self.filename
         self.df_houses = pd.read_csv(self.input_filepath)
+        self.list_continuous = config.get('dict_features', 'list_continuous')
+        self.list_categorical = config.get('dict_features', 'list_categorical')
+        self.list_ordinal = config.get('dict_features', 'list_ordinal')
+        self.list_date = config.get('dict_features', 'list_date')
 
     def replace_nan(self, column_list, replacement):
         """
@@ -54,71 +61,43 @@ class MakeDataset():
 
     def execute(self):
         """
-
-        :return:
+        Executes the data processing steps.
         """
 
         logger.info('Processing data from %s.', self.input_filepath)
 
-        # Group the features based on their type
-        list_continuous = [
-            'LotFrontage', 'LotArea', 'MasVnrArea',
-            'BsmtFinSF1', 'BsmtFinSF2', 'BsmtUnfSF',
-            'TotalBsmtSF', '1stFlrSF', '2ndFlrSF',
-            'LowQualFinSF', 'GrLivArea', 'GarageArea',
-            'WoodDeckSF', 'OpenPorchSF', 'EnclosedPorch',
-            '3SsnPorch', 'ScreenPorch', 'PoolArea',
-            'MiscVal'
-        ]
-        list_categorical = [
-            'MSSubClass', 'MSZoning', 'Street',
-            'Alley', 'LotShape', 'LandContour',
-            'Utilities', 'LotConfig', 'LandSlope',
-            'Neighborhood', 'Condition1', 'Condition2',
-            'BldgType', 'HouseStyle', 'RoofStyle',
-            'RoofMatl', 'Exterior1st', 'Exterior2nd',
-            'MasVnrType', 'BedroomAbvGr', 'KitchenAbvGr',
-            'Foundation', 'BsmtExposure', 'HalfBath',
-            'BsmtFinType1', 'BsmtFinType2', 'SaleCondition',
-            'Heating', 'CentralAir', 'Electrical',
-            'BsmtFullBath', 'BsmtHalfBath', 'FullBath',
-            'TotRmsAbvGrd', 'Functional', 'Fireplaces',
-            'GarageType', 'GarageFinish', 'GarageCars',
-            'PavedDrive', 'Fence', 'MiscFeature',
-            'MoSold', 'YrSold', 'SaleType'
-        ]
-        list_ordinal = [
-            'OverallQual', 'OverallCond', 'ExterQual',
-            'ExterCond', 'BsmtQual', 'BsmtCond',
-            'HeatingQC', 'KitchenQual', 'PoolQC',
-            'FireplaceQu', 'GarageQual', 'GarageCond'
-        ]
-        list_date = [
-            'YearBuilt', 'YearRemodAdd', 'GarageYrBlt'
-        ]
-
         # Create a dictionary with
         # key: value to replace NaNs with
         # value: list of column names
-        current_year = datetime.date.today().year  # NaNs will become 0 when converting years to age
-        dict_nan = {0: list_continuous + list_ordinal,
-                    'None': list_categorical,
-                    current_year: list_date}
+        current_year = date.today().year  # NaNs will become 0 when converting years to age
+        dict_nan = {
+            0: self.list_continuous + self.list_ordinal,
+            'None': self.list_categorical,
+            current_year: self.list_date
+        }
 
         # Replace all NaN values for each feature type
         for key, value in dict_nan.items():
             self.replace_nan(value, key)
 
-        # Convert ordinal strings to numeric values
+
         # Poor | Fair | Average | Good | Excellent
-        dict_ord = {'Po': 1, 'Fa': 2, 'TA': 3, 'Gd': 4, 'Ex': 5}
-        self.map_dictionary(dict_ord, list_ordinal)
+        dict_ord = {
+            'Po': 1,
+            'Fa': 2,
+            'TA': 3,
+            'Gd': 4,
+            'Ex': 5
+        }
+
+        # Convert ordinal strings to numeric values
+        self.map_dictionary(dict_ord, self.list_ordinal)
 
         # Use standard scaler to standardize the continuous and ordinal features
-        self.standard_scaler(list_continuous + list_ordinal)
+        self.standard_scaler(self.list_continuous + self.list_ordinal)
 
         # Convert the categorical features to dummies
-        self.df_houses = pd.get_dummies(self.df_houses, columns=list_categorical, drop_first=True)
+        self.df_houses = pd.get_dummies(self.df_houses, columns=self.list_categorical, drop_first=True)
 
         # Store the processed file
         self.df_houses.to_csv(self.output_filepath)
