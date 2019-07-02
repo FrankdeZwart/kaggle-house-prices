@@ -61,7 +61,8 @@ dict_features = {
                      'PoolQC', 'FireplaceQu',
                      'GarageQual', 'GarageCond'],
     'list_date': ['YearBuilt', 'YearRemodAdd',
-                  'GarageYrBlt']
+                  'GarageYrBlt'],
+    'target': 'SalePrice'
 }
 
 # Create a dictionary with
