@@ -4,8 +4,10 @@ Use the statsmodels package to perform a linear regression.
 import logging
 from typing import Dict, Any
 
+import numpy as np
 import pandas as pd
 import statsmodels.api as sm
+from sklearn.metrics import mean_squared_error
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +42,8 @@ class LinearRegression():
         :return: Dictionary with OLS output.
         """
 
+        logger.info('Fitting a basic OLS regression')
+
         X = sm.add_constant(X)
         sm.OLS(y, X)
 
@@ -60,9 +64,6 @@ class LinearRegression():
 
         coeffs = mdl_fit.params
 
-        import pdb
-        pdb.set_trace()
-
         return {self.MDL: mdl_fit,
                 self.IS_FIT: y_hat,
                 self.COEFFICIENTS: coeffs,
@@ -73,6 +74,7 @@ class LinearRegression():
         """
         Collects essential metrics to evaluate the performance of OLS fit.
         """
+
         # 1. Log-likelihood value to determine AIC
         llf = np.round(fit.llf, 3)
 

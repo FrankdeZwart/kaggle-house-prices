@@ -41,6 +41,16 @@ def main():
     X = BuildFeatures(filename=args.datafile).select_features(features)
 
     # Fit a linear regression
-    LinearRegression().ols_basic(y, X)
+    ols_results = LinearRegression().ols_basic(y, X)
+
+    # Evaluate results
+    evaluation_results = LinearRegression().ols_performance(
+        fit=ols_results['mdl'],
+        true_values=y,
+        pred_values=ols_results['is_fit'],
+        n_features=ols_results['num_features'])
+
+    import pdb
+    pdb.set_trace()
 
     logger.info('Script succeeded.')

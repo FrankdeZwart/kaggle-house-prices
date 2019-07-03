@@ -12,12 +12,11 @@ logger = logging.getLogger(__name__)
 
 class BuildFeatures():
     """
-
+    Generate and select features.
     """
 
     def __init__(self, filename: str):
         """
-
         """
         self.filename = filename
         self.input_filepath = './data/processed/' + self.filename
@@ -26,7 +25,6 @@ class BuildFeatures():
 
     def select_features(self, features) -> pd.DataFrame:
         """
-        
         :return:
         """
 
