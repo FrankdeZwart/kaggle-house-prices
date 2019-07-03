@@ -217,6 +217,9 @@ class LinearRegression():
             # Show the made improvement
             logger.info("Current {}:\t{}".format(perf_opt, current_perf))
 
+            import pdb
+            pdb.set_trace()
+
             # Update the remaining residuals with current fit
             current_residuals = y - current_yhat
 
@@ -243,6 +246,9 @@ class LinearRegression():
 
             # Update the performance
             previous_perf = current_perf
+
+        import pdb
+        pdb.set_trace()
 
         return {self.SELECTED_FEATURES: optimized_features,
                 self.RESIDUALS: residual_mat,
