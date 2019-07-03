@@ -19,7 +19,7 @@ class MakeDataset():
 
     def __init__(self, filename: str):
         """
-        Define the input and output filepath.
+        Define the input and output filepath and feature categories.
         :param filename: Name of the file that is processed.
         """
         self.filename = filename

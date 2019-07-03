@@ -40,22 +40,7 @@ def main():
     y = BuildFeatures(filename=args.datafile).get_target()
     X = BuildFeatures(filename=args.datafile).select_features(features)
 
-    # Fit a linear regression
-    ols_results = LinearRegression().ols_basic(y, X)
-
-    # Evaluate results
-    evaluation_results = LinearRegression().ols_performance(
-        fit=ols_results['mdl'],
-        true_values=y,
-        pred_values=ols_results['is_fit'],
-        n_features=ols_results['num_features'])
-
-    # Calculate correlations between variables
-    correlation_results = LinearRegression().correlations(
-        primary_variable=y,
-        variables_to_evaluate=X)
-
-    import pdb
-    pdb.set_trace()
+    # Stepwise feature building
+    LinearRegression().stepwise_feature_builder(y=y, X=X)
 
     logger.info('Script succeeded.')
