@@ -50,6 +50,11 @@ def main():
         pred_values=ols_results['is_fit'],
         n_features=ols_results['num_features'])
 
+    # Calculate correlations between variables
+    correlation_results = LinearRegression().correlations(
+        primary_variable=y,
+        variables_to_evaluate=X)
+
     import pdb
     pdb.set_trace()
 
