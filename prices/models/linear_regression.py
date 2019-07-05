@@ -182,8 +182,8 @@ class LinearRegression():
         # Run the specific-to-general algorithm while there are still relevant features and it still improves enough
         while (abs(residual_correlations[0]) > min_corr) and (performance_improvement >= perf_threshold):
             """
-            Initialize correlations with the residuals of the baseline model. With every added feature the residuals should
-            decrease a little bit (i.e. better fit). To determine which is the best variable to add next,
+            Initialize correlations with the residuals of the baseline model. With every added feature the residuals
+            should decrease a little bit (i.e. better fit). To determine which is the best variable to add next,
             we select the feature that correlates strongest with the remaining residuals (of the latest model).
             """
 
