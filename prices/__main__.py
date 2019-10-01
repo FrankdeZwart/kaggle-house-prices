@@ -6,9 +6,8 @@ import logging.config
 import os
 import sys
 
-from prices.config import config
 from prices.data.make_dataset import MakeDataset
-from prices.features.build_features import BuildFeatures
+from prices.features.build_features import FeatureBuilder
 from prices.models.linear_regression import LinearRegression
 
 log_file_path = os.path.join(sys.prefix, 'prices_data', 'logger.ini')
@@ -36,11 +35,10 @@ def main():
     MakeDataset(filename=args.datafile).execute()
 
     # Feature engineering
-    features = config.get('dict_features', 'list_continuous')
-    y = BuildFeatures(filename=args.datafile).get_target()
-    X = BuildFeatures(filename=args.datafile).select_features(features)
+    # feature_object = FeatureBuilder(filename=args.datafile)
+    X, y = FeatureBuilder(filename=args.datafile).build_features()
 
     # Stepwise feature building
-    LinearRegression().stepwise_feature_builder(y=y, X=X)
+    print(LinearRegression().select_features_forward(X=X, y=yg))
 
     logger.info('Script succeeded.')
