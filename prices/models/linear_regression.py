@@ -9,6 +9,7 @@ import pandas as pd
 import statsmodels.api as sm
 from scipy import stats
 from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_squared_log_error
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +28,7 @@ class LinearRegression():
     AIC = 'aic'
     MSPE = 'mspe'
     R2 = 'r2'
+    RMSLE = 'rmsle'
     BASELINE_MODEL = 'baseline_model'
     SIGNIFICANCE_95P = 'significance_95p'
 
@@ -36,10 +38,6 @@ class LinearRegression():
     SELECTED_FEATURES = 'selected_features'
     RESIDUALS = 'residuals'
     JARQUE_BERA_PVALUES = 'jarque_bera_pvalues'
-
-    def __init__(self):
-        """
-        """
 
     def ols_basic(self, y: pd.Series, X: pd.DataFrame) -> Dict[str, Any]:
         """
@@ -52,7 +50,7 @@ class LinearRegression():
         logger.info('Fitting a basic OLS regression')
 
         # Add constant if not present
-        X = sm.add_constant(data=X)
+        X = sm.add_constant(data=X.values)
 
         # Save shape; n = obs, k = features
         obs, features = X.shape
@@ -91,10 +89,14 @@ class LinearRegression():
         # 4. Mean Squared Prediction Error (in-sample), comparable to R-squared
         mspe = np.round(mean_squared_error(true_values, pred_values), 3)
 
+        # 5. Root Mean Squared Logarithmic Error (in-sample)
+        rmsle = np.round(np.sqrt(mean_squared_log_error(true_values, pred_values)), 5)
+
         return {self.LOGL: llf,
                 self.AIC: aic,
                 self.MSPE: mspe,
-                self.R2: r_squared}
+                self.R2: r_squared,
+                self.RMSLE: rmsle}
 
     def correlations(self, primary_variable: pd.Series, variables_to_evaluate: pd.DataFrame) -> pd.DataFrame:
         """
@@ -123,8 +125,8 @@ class LinearRegression():
         return all_correlations_raw[self.CORRELATION]
 
     def stepwise_feature_builder(self, y: pd.Series, X: pd.DataFrame,
-                                 min_corr: float = 0.05, perf_opt: str = 'r2',
-                                 perf_threshold: float = 0.05) -> dict:
+                                 min_corr: float = 0.05, perf_opt: str = 'rmsle',
+                                 perf_threshold: float = 0.001) -> dict:
         """
         :param y: The target variable.
         :param X: Dataframe with the processed features.
@@ -135,7 +137,7 @@ class LinearRegression():
         """
 
         # Give overview of the inputted features
-        logger.info("The setup contains %d input_features, covering %d observations.",
+        logger.info("The setup contains %d input features, covering %d observations.",
                     X.shape[1], X.shape[0])
 
         # TODO Apply the variable selection algorithm to remove multicollinearity
@@ -156,7 +158,8 @@ class LinearRegression():
             pred_values=baseline_output[self.IS_FIT],
             n_features=baseline_output[self.NUM_FEATURES])
 
-        logger.info('The baseline performance is (R2): {}'.format(baseline_perf[self.R2]))
+        # Print the baseline performance
+        logger.info("The baseline performance is {}:\t{}".format(perf_opt, baseline_perf[perf_opt]))
 
         # Determine residuals of basline AR model, see explanation of procedure below
         baseline_yhat = baseline_output[self.IS_FIT]
@@ -176,14 +179,14 @@ class LinearRegression():
             variables_to_evaluate=exog_features)
 
         # Initialize performance improvement criterium
-        previous_perf = 1e-9
+        previous_perf = -1e+9
         performance_improvement = perf_threshold
 
         # Run the specific-to-general algorithm while there are still relevant features and it still improves enough
-        while (abs(residual_correlations[0]) > min_corr) and (performance_improvement >= perf_threshold):
+        while (abs(residual_correlations[0]) > min_corr) and (abs(performance_improvement) >= perf_threshold):
             """
-            Initialize correlations with the residuals of the baseline model. With every added feature the residuals should
-            decrease a little bit (i.e. better fit). To determine which is the best variable to add next,
+            Initialize correlations with the residuals of the baseline model. With every added feature the residuals
+            should decrease a little bit (i.e. better fit). To determine which is the best variable to add next,
             we select the feature that correlates strongest with the remaining residuals (of the latest model).
             """
 
@@ -192,7 +195,7 @@ class LinearRegression():
             current_feature_name = residual_correlations.index[0]
 
             # Drop features from full 'exog_features' dataframe so it won't be reselected
-            exog_features.drop(residual_correlations.index[0], axis=1, inplace=True)
+            exog_features = exog_features.drop(residual_correlations.index[0], axis=1)
 
             # Fit 'optimized_features' set to the dependent variable (Y)
             current_mdl = self.ols_basic(y, X[optimized_features])
@@ -203,9 +206,9 @@ class LinearRegression():
                 n_features=current_mdl[self.NUM_FEATURES])
             current_yhat = current_mdl[self.IS_FIT]  # Current fit
 
-            # As MSPE is better when lower, take the inverse to make a higher value an improvement
-            if perf_opt == self.MSPE:
-                perf_metric = 1 / current_perf[perf_opt]
+            # As RMSLE is better when lower, take -RMSLE to make a higher value an improvement
+            if perf_opt == self.RMSLE:
+                perf_metric = -current_perf[perf_opt]
             elif perf_opt == self.R2:
                 perf_metric = current_perf[perf_opt]
             else:
@@ -215,7 +218,10 @@ class LinearRegression():
             current_perf = np.round(perf_metric, 4)
 
             # Show the made improvement
-            logger.info("Current {}:\t{}".format(perf_opt, current_perf))
+            if perf_opt == self.RMSLE:
+                logger.info("Current {}:\t{}".format(perf_opt, -current_perf))
+            else:
+                logger.info("Current {}:\t{}".format(perf_opt, current_perf))
 
             # Update the remaining residuals with current fit
             current_residuals = y - current_yhat
@@ -235,17 +241,15 @@ class LinearRegression():
             performance_improvement = (current_perf / previous_perf) - 1
 
             # If model performance decreases quit the while-loop and use previous model
-            if performance_improvement < 0:
-                del optimized_features[-1]
-                logger.info("Performance decreased, so reverting back to previous model with {} {}."
-                            .format(perf_opt, previous_perf))
-                break
+            if perf_opt != self.RMSLE:
+                if performance_improvement < 0:
+                    del optimized_features[-1]
+                    logger.info("Performance decreased, so reverting back to previous model with {} {}."
+                                .format(perf_opt, previous_perf))
+                    break
 
             # Update the performance
             previous_perf = current_perf
-
-        import pdb
-        pdb.set_trace()
 
         return {self.SELECTED_FEATURES: optimized_features,
                 self.RESIDUALS: residual_mat,

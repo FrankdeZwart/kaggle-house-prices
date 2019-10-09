@@ -6,10 +6,10 @@ import logging.config
 import os
 import sys
 
-from prices.config import config
-from prices.data.make_dataset import MakeDataset
-from prices.features.build_features import BuildFeatures
+from prices.data.dataset_builder import DatasetBuilder
+from prices.features.feature_selection import FeatureSelection
 from prices.models.linear_regression import LinearRegression
+from prices.models.random_forest import RandomForest
 
 log_file_path = os.path.join(sys.prefix, 'prices_data', 'logger.ini')
 logging.config.fileConfig(log_file_path, disable_existing_loggers=False)
@@ -24,23 +24,58 @@ def main():
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        '--datafile', '-d',
-        help='Source datafile.',
-        dest='datafile',
+        '--train',
+        help='Source train data.',
+        dest='train',
         type=str
+    )
+
+    parser.add_argument(
+        '--test',
+        help='Source test data.',
+        dest='test',
+        type=str
+    )
+
+    parser.add_argument(
+        '--prep',
+        help='Boolean whether or not to pre-process raw data.',
+        dest='prep',
+        type=bool
     )
 
     args, _ = parser.parse_known_args()
 
-    # Process the raw data for model input
-    MakeDataset(filename=args.datafile).execute()
+    if args.prep == True:
+        # Process the raw data for model input
+        DatasetBuilder(filename=args.train).execute()
 
     # Feature engineering
-    features = config.get('dict_features', 'list_continuous')
-    y = BuildFeatures(filename=args.datafile).get_target()
-    X = BuildFeatures(filename=args.datafile).select_features(features)
+    y_train = FeatureSelection(filename=args.train).get_target()
+    X_train = FeatureSelection(filename=args.train).get_features()
 
     # Stepwise feature building
-    LinearRegression().stepwise_feature_builder(y=y, X=X)
+    feature_selection = LinearRegression().stepwise_feature_builder(y=y_train, X=X_train)
+    logger.info('Selected features are: ' + str(feature_selection['selected_features']))
+
+    # Basic OLS regression
+    results_ols = LinearRegression().ols_basic(y=y_train, X=X_train[feature_selection['selected_features']])
+
+    # Random forest regression
+    results_rf = RandomForest().rf_basic(y_train=y_train, X_train=X_train[feature_selection['selected_features']])
+
+    # # Print rf tree
+    # RandomForest().rf_tree_output(mdl=results_rf['mdl'],
+    #                               feature_list=['Constant'] + feature_selection['selected_features'])
+
+    # Evaluate performance
+    evaluation_ols = LinearRegression().ols_performance(
+        fit=results_ols['mdl'],
+        true_values=y_train,
+        pred_values=results_ols['is_fit'],
+        n_features=results_ols['num_features'])
+    logger.info('OLS in-sample RMSLE: %s', evaluation_ols['rmsle'])
+    evaluation_rf = RandomForest().rf_performance(true_values=y_train, pred_values=results_rf['is_fit'])
+    logger.info('Random Forest in-sample RMSLE: %s', evaluation_rf['rmsle'])
 
     logger.info('Script succeeded.')
