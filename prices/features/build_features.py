@@ -3,6 +3,7 @@ Build the feature matrix and target vector from the processed data.
 """
 import logging
 
+import numpy as np
 import pandas as pd
 
 from prices.config import config
@@ -22,8 +23,7 @@ class FeatureBuilder:
         self.filename = filename
         self.input_filepath = './data/processed/' + self.filename
         self.df = pd.read_csv(self.input_filepath)
-        self.target = config.get('dict_features', 'target')
-        self.features = config.get('dict_features', 'list_continuous')
+        self.target = config.get_attribute('dict_features', 'target')
 
     @staticmethod
     def filter_multicollinearity(target: pd.Series, all_features: pd.DataFrame, threshold: float = 0.7) -> list:
@@ -77,11 +77,16 @@ class FeatureBuilder:
 
         return filtered_features
 
-    def get_features(self) -> pd.DataFrame:
+    def get_features(self, feature_list=[]) -> pd.DataFrame:
         """
         :return: The features in a df.
         """
-        return self.df[self.features]
+        if feature_list == []:
+            features = self.df.drop(self.target, axis=1)
+        else:
+            features = self.df[feature_list]
+
+        return features
 
     def get_target(self) -> pd.Series:
         """
@@ -89,7 +94,7 @@ class FeatureBuilder:
         :return:
         """
 
-        return self.df[self.target]
+        return np.log1p(self.df[self.target])
 
     def build_features(self, filter_multicollinearity=True):
         """
@@ -98,8 +103,6 @@ class FeatureBuilder:
         :return:
         """
         if filter_multicollinearity:
-            import pdb
-            pdb.set_trace()
-            self.features = self.filter_multicollinearity(self.get_target(), self.get_features())
+            feature_list = self.filter_multicollinearity(target=self.get_target(), all_features=self.get_features())
 
-        return self.get_features(), self.get_target()
+        return self.get_features(feature_list), self.get_target()

@@ -99,9 +99,6 @@ class LinearRegression():
                 self.R2: r_squared,
                 self.RMSLE: rmsle}
 
-    def select_features_backward(self, y: pd.Series, X: pd.DataFrame,
-                                min_corr: float = 0.05, perf_opt: str = 'r2',
-                                perf_threshold: float = 0.05) -> dict:
     def correlations(self, primary_variable: pd.Series, variables_to_evaluate: pd.DataFrame) -> pd.DataFrame:
         """
         Computes the correlation between the primary variable and a set of possible variables.
@@ -128,9 +125,9 @@ class LinearRegression():
 
         return all_correlations_raw[self.CORRELATION]
 
-    def stepwise_feature_builder(self, y: pd.Series, X: pd.DataFrame,
-                                 min_corr: float = 0.05, perf_opt: str = 'rmsle',
-                                 perf_threshold: float = 0.001) -> dict:
+    def select_features_forward(self, y: pd.Series, X: pd.DataFrame,
+                                min_corr: float = 0.05, perf_opt: str = 'rmsle',
+                                perf_threshold: float = 0.001) -> dict:
         """
         :param y: The target variable.
         :param X: Dataframe with the processed features.
@@ -183,7 +180,7 @@ class LinearRegression():
             variables_to_evaluate=exog_features)
 
         # Initialize performance improvement criterium
-        previous_perf = -1e+9
+        previous_perf = 1e-9
         performance_improvement = perf_threshold
 
         # Run the specific-to-general algorithm while there are still relevant features and it still improves enough
@@ -255,16 +252,13 @@ class LinearRegression():
             # Update the performance
             previous_perf = current_perf
 
-        import pdb
-        pdb.set_trace()
-
         return {self.SELECTED_FEATURES: optimized_features,
                 self.RESIDUALS: residual_mat,
                 self.JARQUE_BERA_PVALUES: jb_p_values_mat.T}
 
-    def select_features_forward(self, X: pd.Series, y: pd.DataFrame,
-                                min_corr: float = 0.05, perf_opt: str = 'r2',
-                                perf_threshold: float = 0.05) -> dict:
+    def select_features_backward(self, X: pd.Series, y: pd.DataFrame,
+                                 min_corr: float = 0.05, perf_opt: str = 'r2',
+                                 perf_threshold: float = 0.05) -> dict:
         """
         :param y: The target variable.
         :param X: Dataframe with the processed features.

@@ -52,8 +52,8 @@ def main():
         DatasetBuilder(filename=args.train).execute()
 
     # Feature engineering
-    # feature_object = FeatureBuilder(filename=args.datafile)
-    X, y = FeatureBuilder(filename=args.datafile).build_features()
+    X, y = FeatureBuilder(filename=args.train).build_features()
+    logger.info('Selected features are: ' + str(X.columns))
 
     # Stepwise feature building
     print(LinearRegression().select_features_forward(X=X, y=y))
