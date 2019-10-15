@@ -6,10 +6,11 @@ import logging.config
 import os
 import sys
 
+from prices.features.build_features import FeatureBuilder
 from prices.data.dataset_builder import DatasetBuilder
-from prices.features.feature_selection import FeatureSelection
+# from prices.features.feature_selection import FeatureSelection
 from prices.models.linear_regression import LinearRegression
-from prices.models.random_forest import RandomForest
+# from prices.models.random_forest import RandomForest
 
 log_file_path = os.path.join(sys.prefix, 'prices_data', 'logger.ini')
 logging.config.fileConfig(log_file_path, disable_existing_loggers=False)
@@ -51,10 +52,17 @@ def main():
         DatasetBuilder(filename=args.train).execute()
 
     # Feature engineering
-    y_train = FeatureSelection(filename=args.train).get_target()
-    X_train = FeatureSelection(filename=args.train).get_features()
+    X, y = FeatureBuilder(filename=args.train).build_features()
+    logger.info('Selected features are: ' + str(X.columns))
 
     # Stepwise feature building
+    print(LinearRegression().select_features_forward(X=X, y=y))
+
+    logger.info('Script succeeded.')
+
+
+"""
+# Stepwise feature building
     feature_selection = LinearRegression().stepwise_feature_builder(y=y_train, X=X_train)
     logger.info('Selected features are: ' + str(feature_selection['selected_features']))
 
@@ -79,3 +87,4 @@ def main():
     logger.info('Random Forest in-sample RMSLE: %s', evaluation_rf['rmsle'])
 
     logger.info('Script succeeded.')
+"""
