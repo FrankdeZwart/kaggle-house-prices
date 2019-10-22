@@ -1,9 +1,9 @@
-Predicting Molecular Properties
+Kaggle House Prices
 ==============================
 
-This challenge aims to predict interactions between atoms. Imaging technologies like MRI enable us to see and understand the molecular composition of tissues. Nuclear Magnetic Resonance (NMR) is a closely related technology which uses the same principles to understand the structure and dynamics of proteins and molecules.
+Predict sales prices and practice feature engineering, RFs, and gradient boosting.
 
-See: https://www.kaggle.com/c/house-prices-advanced-regression-techniques/overview
+See: https://www.kaggle.com/c/house-prices-advanced-regression-techniques
 
 Project Organization
 ------------
