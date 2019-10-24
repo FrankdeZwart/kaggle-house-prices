@@ -102,6 +102,7 @@ class FeatureBuilder:
         :param filter_multicollinearity:
         :return:
         """
+
         if filter_multicollinearity:
             feature_list = self.filter_multicollinearity(target=self.get_target(), all_features=self.get_features())
 
